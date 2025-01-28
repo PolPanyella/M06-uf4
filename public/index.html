@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>Pengti</title>
-
+	<meta charset="UTF-8" />
 
 
 
@@ -41,12 +41,32 @@ ws.onmessage = function (msg){
 
 	game.scene.scenes[0].scoreTextPlayer1.setText(`Player 1: ${data.ps1}`);
 	game.scene.scenes[0].scoreTextPlayer2.setText(`Player 2: ${data.ps2}`);
-	}	
+	}
+	else if(data.game_over != null){
+		if(data.winner != null){
+			if(data.winner == player_num){
+					win = true;
+			}
+				
+		}	
+		game_over = data.game_over;
+	}
+	else if(data.game_start != null){
+		game_start = true;
+	}
+	else if (data.player_disconected_text != null){
+		text_player_disconected = data.player_disconected_text;
+	}
+		
+
+	
 
 }
-
-
+let win  = false;
+let game_over = false;
 let win_w=800, win_h=450;
+let game_start = false;
+
 
 let config = {
     type: Phaser.AUTO,
@@ -79,6 +99,8 @@ let ball_x_dir=1,ball_y_dir=1;
 let scorePlayer1 = 0;
 let scorePlayer2 = 0;
 let palaPlayer1;
+let text_player_disconected = "";
+
 
 function preload ()
 {
@@ -93,9 +115,10 @@ function create ()
 
 	this.scoreTextPlayer1 = this.add.text(100, 20, `Player 1: ${scorePlayer1}`, { fontSize: '20px', fill: '#fff' });
     this.scoreTextPlayer2 = this.add.text(600, 20, `Player 2: ${scorePlayer2}`, { fontSize: '20px', fill: '#fff' });
-	
+	this.textWin = this.add.text(300, 150, ``, { fontSize: '50px', fill: '#fff' });
+	this.textDisconected = this.add.text(300, 150, ``, { fontSize: '50px', fill: '#fff' });
 	this.cursors = this.input.keyboard.createCursorKeys();
-	
+	get_ball_direction();	
 	
 	
 }
@@ -103,11 +126,30 @@ function create ()
 function update ()
 {
 	if(player_num == 0)
+		return;
+
+	if(!game_start){
+		return;
+	}
+
+
+	if(game_over == true){
+		if(win){	
+			this.textWin.setText(`YOU WIN`);
+			this.textWin.setColor('#00ff00');
+		}
+		else {
+			this.textWin.setText(`YOU LOSE`);
+			this.textWin.setColor('#ff0000');
+		}
 		return
+	}
+	this.textDisconected.setText(text_player_disconected);
+
 	if(player_num == 1){
 
-		ball.x += ball_x_dir;
-	    ball.y += ball_y_dir;
+		ball.x += ball_x_dir * 2;
+	    ball.y += ball_y_dir * 2;
 
     	// Ball collision with top and bottom
     	if (ball.y > win_h || ball.y < 0) {
@@ -125,10 +167,13 @@ function update ()
         	updateScores();
     	}
 
-		if(ball.x > player2.x -player2.w && ball.y > player2.y -players_h / 2){
-			resetBall();
+		if(Phaser.Geom.Intersects.RectangleToRectangle(ball.getBounds(), player1.getBounds())){
+			ball_x_dir = 1;
 		}
-	
+		
+		if(Phaser.Geom.Intersects.RectangleToRectangle(ball.getBounds(), player2.getBounds())){
+			ball_x_dir = -1;
+		}
 	
 
 		let ball_pos = {
@@ -140,17 +185,17 @@ function update ()
    
     if (this.cursors.up.isDown) {
 		if(player_num == 1){
-        	player1.y -= 1;
+        	player1.y -= 2;
 		}
 		else if(player_num ==2){
-        	player2.y -= 1;
+        	player2.y -= 2;
 		}
     } else if (this.cursors.down.isDown) {
 		if(player_num == 1){
-        	player1.y += 1;
+        	player1.y += 2;
 		}
 		else if(player_num ==2){
-        	player2.y += 1;
+        	player2.y += 2;
 		}
     }
 	
@@ -169,11 +214,31 @@ function update ()
 	ws.send(JSON.stringify(player_pos))
 	
 }
+function get_ball_direction (){
+	
+	let angle = Phaser.Math.Between(-45, 45);
+	angle = Phaser.Math.DegToRad(angle);
+	
+	if(Math.abs(angle) < 10){
+		if (angle < 0){
+			angle -= 10;
+		}
+		else{
+			angle +=10;
+		}
+	}
+
+	ball_x_dir = Math.cos(angle) * (Math.random() < 0.5 ? -1 : 1);
+	ball_y_dir = Math.sin(angle);
+}
+
+
 function resetBall() {
     ball.x = ball_x_init;
     ball.y = ball_y_init;
     ball_x_dir = -ball_x_dir;
     
+	get_ball_direction();	
 }
 function updateScores() {
 	game.scene.scenes[0].scoreTextPlayer1.setText(`Player 1: ${scorePlayer1}`);

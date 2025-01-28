@@ -22,8 +22,8 @@ let http_server = http.createServer(function (request, response) {
 let ws_server = new ws.Server({server: http_server});
 
 let player1, player2;
-let gameOver
-
+let gameOver = false;
+let maxScore = 3;
 
 ws_server.on('connection', function (conn){
 	console.log("Usuaario conectado");
@@ -36,6 +36,19 @@ ws_server.on('connection', function (conn){
 
 		player1.send(JSON.stringify(info));
 		
+		player1.on('close', function(){
+			console.log("Player 1 disconnected");
+			player1 = null;
+
+			let info = {
+				player_disconected_text:  "player1 disconected"
+			};
+			
+				player2.send(JSON.stringify(info));
+		});
+
+
+
 		player1.on('message', function (msg){
 			if(player2 == null){
 				return;
@@ -51,8 +64,26 @@ ws_server.on('connection', function (conn){
 			}
 			else if (info.ps1 != null){
 				player2.send(JSON.stringify(info));
-				if(info.ps1 >= 3 || info.ps2 >=3){
+				if(info.ps1 >= maxScore || info.ps2 >= maxScore){
 					gameOver = true;
+					let data = {
+						game_over : true,
+						winner: 0
+
+					}
+					
+					if(info.ps1 >= maxScore){
+						data.winner = 1;
+					}
+					else if (info.ps2 >= maxScore){
+						data.winner = 2;
+					}
+					let data_json = JSON.stringify(data);
+					
+
+					player1.send(data_json);
+					player2.send(data_json);
+					return;
 				}
 
 
@@ -66,7 +97,23 @@ ws_server.on('connection', function (conn){
 			player_num: 2
 		};
 			
+		player2.on('close', function(){
+			console.log("Player 1 disconnected");
+			player2 = null;
+
+		});
+
+		setTimeout(function(){
+		
+			let info = {
+				game_start : true
+			}
+			player1.send(JSON.stringify(info));
+			player2.send(JSON.stringify(info));
+		}, 500);
+
 		player2 = conn;
+		
 		player2.send(JSON.stringify(info));
 		player2.on('message', function (msg){
 			if(player1 == null){
