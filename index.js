@@ -24,6 +24,8 @@ let ws_server = new ws.Server({server: http_server});
 let player1, player2;
 let gameOver = false;
 let maxScore = 3;
+let viewers = [];
+
 
 ws_server.on('connection', function (conn){
 	console.log("Usuaario conectado");
@@ -39,14 +41,31 @@ ws_server.on('connection', function (conn){
 		player1.on('close', function(){
 			console.log("Player 1 disconnected");
 			player1 = null;
-
-			let info = {
-				player_disconected_text:  "player1 disconected"
+			
+			
+			info = {
+				player_disconected_text:  ""
 			};
+			sendInfoViewers(info);
+			if(player2 != null){
+				
+				let info = {
+					player_disconected_text:  "player1 disconected"
+				};
+				sendInfoViewers(info);
 			
 				player2.send(JSON.stringify(info));
+			}
 		});
 
+			if(player2 != null){
+				
+				let info = {
+					player_disconected_text:  ""
+				};
+			
+				player2.send(JSON.stringify(info));
+			}
 
 
 		player1.on('message', function (msg){
@@ -56,7 +75,8 @@ ws_server.on('connection', function (conn){
 			console.log("Jugador 1: "+msg);
 			let info = JSON.parse(msg);
 
-			if(info.y != null){	
+			sendInfoViewers(info);
+			if(info.ps1y != null){	
 				player2.send(JSON.stringify(info));
 			}
 			else if(info.by != null){
@@ -81,6 +101,8 @@ ws_server.on('connection', function (conn){
 					let data_json = JSON.stringify(data);
 					
 
+					sendInfoViewers(data);
+
 					player1.send(data_json);
 					player2.send(data_json);
 					return;
@@ -97,12 +119,31 @@ ws_server.on('connection', function (conn){
 			player_num: 2
 		};
 			
+		player2 = conn;
 		player2.on('close', function(){
-			console.log("Player 1 disconnected");
+			console.log("Player 2 disconnected");
 			player2 = null;
+
+			if(player1 != null){
+				
+				info = {
+					player_disconected_text:  ""
+				};
+				sendInfoViewers(info);
+			
+				player1.send(JSON.stringify(info));
+			}
 
 		});
 
+			if(player1 != null){
+				
+				let info = {
+					player_disconected_text:  ""
+				};
+			
+				player1.send(JSON.stringify(info));
+			}
 		setTimeout(function(){
 		
 			let info = {
@@ -112,25 +153,59 @@ ws_server.on('connection', function (conn){
 			player2.send(JSON.stringify(info));
 		}, 500);
 
-		player2 = conn;
 		
 		player2.send(JSON.stringify(info));
 		player2.on('message', function (msg){
+			
 			if(player1 == null){
 				return;
 			}
+			
 			console.log("Jugador 2: "+msg);
 			let info = JSON.parse(msg);
 
-			if(info.y != null){	
+			sendInfoViewers(info);
+			
+
+
+			if(info.ps2y != null){	
 				player1.send(JSON.stringify(info));
 			}
+			info = {
+				player_disconected_text:  ""
+			};
+			sendInfoViewers(info);
 		});
+	}
+	else{
+		viewers.push(conn);
+		let info = {
+			player_num: 3		
+		}
+
+		conn.send(JSON.stringify(info));
+
+		info = {
+			game_start : true
+		}	
+		conn.send(JSON.stringify(info));
+		//sendInfoViewers();
 	}
 
 	
 });
+function sendInfoViewers(info){
+	viewers.forEach(function sendViewer(viewer, index){
 
+		
+		//console.log(viewer);
+
+		viewer.send(JSON.stringify(info));
+					
+		
+	})
+
+}
 
 
 

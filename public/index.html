@@ -24,13 +24,30 @@ ws.onmessage = function (msg){
 		player_num = data.player_num;
 		console.log("Somos el jugador " + player_num);
 	}	
-	else if(data.y != null){
+	else if(data.ps1y != null){
 		if(player_num == 1){
-			player2.y = data.y;
+			player2.y = data.ps1y;
 
 		}
 		else if(player_num == 2){
-			player1.y = data.y;
+			player1.y = data.ps1y;
+		}
+		else{
+			player1.y = data.ps1y;
+		}
+		
+	}
+	else if(data.ps2y != null){
+
+		if(player_num == 1){
+			player2.y = data.ps2y;
+
+		}
+		else if(player_num == 2){
+			player1.y = data.ps2y;
+		}
+		else{
+			player2.y = data.ps2y;
 		}
 	}
 	else if (data.by != null){
@@ -38,7 +55,6 @@ ws.onmessage = function (msg){
 		ball.y =  data.by;
 	}
 	else if(data.ps1 != null){
-
 	game.scene.scenes[0].scoreTextPlayer1.setText(`Player 1: ${data.ps1}`);
 	game.scene.scenes[0].scoreTextPlayer2.setText(`Player 2: ${data.ps2}`);
 	}
@@ -47,6 +63,7 @@ ws.onmessage = function (msg){
 			if(data.winner == player_num){
 					win = true;
 			}
+			winner = data.winner;
 				
 		}	
 		game_over = data.game_over;
@@ -57,11 +74,13 @@ ws.onmessage = function (msg){
 	else if (data.player_disconected_text != null){
 		text_player_disconected = data.player_disconected_text;
 	}
+	
 		
 
 	
 
 }
+//let winner = 0;
 let win  = false;
 let game_over = false;
 let win_w=800, win_h=450;
@@ -116,7 +135,7 @@ function create ()
 	this.scoreTextPlayer1 = this.add.text(100, 20, `Player 1: ${scorePlayer1}`, { fontSize: '20px', fill: '#fff' });
     this.scoreTextPlayer2 = this.add.text(600, 20, `Player 2: ${scorePlayer2}`, { fontSize: '20px', fill: '#fff' });
 	this.textWin = this.add.text(300, 150, ``, { fontSize: '50px', fill: '#fff' });
-	this.textDisconected = this.add.text(300, 150, ``, { fontSize: '50px', fill: '#fff' });
+	this.textDisconected = this.add.text(100, 150, ``, { fontSize: '50px', fill: '#fff' });
 	this.cursors = this.input.keyboard.createCursorKeys();
 	get_ball_direction();	
 	
@@ -138,10 +157,16 @@ function update ()
 			this.textWin.setText(`YOU WIN`);
 			this.textWin.setColor('#00ff00');
 		}
-		else {
+		else if(player_num == 1 || player_num == 2){
 			this.textWin.setText(`YOU LOSE`);
 			this.textWin.setColor('#ff0000');
 		}
+		else{
+
+			this.textWin.setText(`PLAYER ` + winner + ` WIN`);
+			this.textWin.setColor('#ffff00');
+		}
+		
 		return
 	}
 	this.textDisconected.setText(text_player_disconected);
@@ -203,15 +228,19 @@ function update ()
 
 
 	if(player_num == 1){
-		player_pos.y = player1.y;
+		player_pos.ps1y = player1.y;
 	}
 	else if (player_num ==2){
-		player_pos.y = player2.y;
+		player_pos.ps2y = player2.y;
 	}
 	
 
 
 	ws.send(JSON.stringify(player_pos))
+
+	if(player_num == 3){
+	//	player1.y = 0;
+	}
 	
 }
 function get_ball_direction (){
